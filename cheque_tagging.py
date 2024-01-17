@@ -1,9 +1,9 @@
 ########cheque_tagging.py########
-from jessica_cv import *
+from load_model import *
 
-model = load_build_image_categorization_model(
+model = load_build_image_cheque_categorization_model(
 	model_file = 'cheque.h5py')
-
+##model1= load_build_image_dl_categorization_model()
 def cheque_tagging(input_file):
 	output = {}
 	img = image.load_img(input_file, target_size=(224, 224))
