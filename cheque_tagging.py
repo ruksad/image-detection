@@ -1,9 +1,12 @@
 ########cheque_tagging.py########
-from load_model import *
+from load_my_model import *
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+import numpy as np
 
 model = load_build_image_cheque_categorization_model(
 	model_file = 'cheque.h5py')
-##model1= load_build_image_dl_categorization_model()
+dlModel= load_build_image_dl_categorization_model('dl_classifier.h5')
 def cheque_tagging(input_file):
 	output = {}
 	img = image.load_img(input_file, target_size=(224, 224))
@@ -12,6 +15,33 @@ def cheque_tagging(input_file):
 	x = numpy.array([x])
 	x = base_model_Xception.predict(x)
 	y_score = model.predict(x)
+	prediction = numpy.argmax(y_score)
+	score = numpy.max(y_score)
+	if prediction > 0:
+		output["tag"] = 'cheque'
+	else:
+		output["tag"] = 'non_cheque'
+	output["score"] = score
+	return output
+
+def dl_tagging(input_file):
+	img = load_img(input_file, target_size=(7, 7))
+	img_array = img_to_array(img) #/ 255.0  # Normalize pixel values between 0 and 1
+	# img_array = np.expand_dims(img_array, axis=0)  # Add an extra dimension for the batch
+	#
+	# # Make predictions
+	# prediction = dlModel.predict(img_array)
+	#
+	# # Convert the prediction to a human-readable class
+	# if prediction[0][0] > 0.5:
+	# 	return "Driving License"
+	# else:
+	# 	return "Cheque"
+
+	x = xception.preprocess_input(img_array)
+	x = numpy.array([x])
+	x = base_model_Xception.predict(x)
+	y_score = dlModel.predict(x)
 	prediction = numpy.argmax(y_score)
 	score = numpy.max(y_score)
 	if prediction > 0:

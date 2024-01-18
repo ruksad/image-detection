@@ -6,6 +6,7 @@ from keras.utils import *
 from keras.losses import *
 from keras.layers import *
 from keras.metrics import *
+from tensorflow.keras import layers, models
 
 #from jessica_local_spark_building import sqlContext
 from pyspark.sql.types import StructType, StructField, StringType
@@ -21,6 +22,16 @@ base_model_Xception = xception.Xception(weights='xception_weights_tf_dim_orderin
 def build_image_categorization_model(gpus = None):
 	model = Sequential()
 	model.add(GlobalAveragePooling2D(input_shape=(7, 7, 2048)))
+	model.add(Dense(1024, activation='relu'))
+	model.add(Dense(2, activation='softmax'))
+	if gpus is not None:
+		model = multi_gpu_model(model, gpus = gpus)
+	return model
+
+def build_image_categorization_model_dl(gpus = None):
+	# Define the neural network model
+	model = Sequential()
+	model.add(GlobalAveragePooling2D(input_shape=(7, 7, 3)))
 	model.add(Dense(1024, activation='relu'))
 	model.add(Dense(2, activation='softmax'))
 	if gpus is not None:
@@ -62,25 +73,6 @@ def train_image_categorization_model(
 	label = numpy.argmax(y,axis=-1)
 	label_confidence = numpy.max(y_score,axis=1)
 	print('building the dataframe of the prediciton results')
-	data = [(str(d), int(l), int(p), float(s)) 
-		for d, l, p, s in zip(x_document_id,
-		label,
-		label_predicted,
-		label_confidence)]
-	###
-	df_prediction = sqlContext.createDataFrame(data, 
-	['document_id', 'label', 'prediction', 'score']).persist(StorageLevel.MEMORY_AND_DISK)
-	####
-	if output_prediction_json is not None:
-		print('saving the prediction results')
-		df_prediction.write.mode('Overwrite').json(output_prediction_json)
-	#####
-	df_prediction.registerTempTable('df_prediction')
-	sqlContext.sql(u"""
-		SELECT label, prediction, COUNT(*)
-		FROM df_prediction
-		GROUP BY label, prediction
-		""").show()
 	return model
 
 def load_build_image_cheque_categorization_model(
@@ -93,17 +85,17 @@ def load_build_image_cheque_categorization_model(
 		metrics=['accuracy'])
 	#model._make_predict_function()
 	return model
-
 def load_build_image_dl_categorization_model(
 		model_file,
 		gpus = None):
-	model = build_image_categorization_model(gpus = gpus)
+	model = build_image_categorization_model_dl(gpus = gpus)
 	model.load_weights(model_file)
 	model.compile(loss='categorical_crossentropy',
 				  optimizer='rmsprop',
 				  metrics=['accuracy'])
 	#model._make_predict_function()
 	return model
+
 def image_tagging(
 	x, model,
 	tag_name):
@@ -118,5 +110,4 @@ def image_tagging(
 		output["tag"] = tag_name
 		output["score"] = score
 	return output
-
 
