@@ -2,6 +2,7 @@
 from load_my_model import *
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.applications.inception_v3 import preprocess_input
 import numpy as np
 
 model = load_build_image_cheque_categorization_model(
@@ -27,7 +28,8 @@ def cheque_tagging(input_file):
 def dl_tagging(input_file):
 	img = load_img(input_file, target_size=(7, 7))
 	img_array = img_to_array(img) #/ 255.0  # Normalize pixel values between 0 and 1
-	# img_array = np.expand_dims(img_array, axis=0)  # Add an extra dimension for the batch
+	img_array = preprocess_input(img_array)
+	img_array = np.expand_dims(img_array, axis=0)  # Add an extra dimension for the batch
 	#
 	# # Make predictions
 	# prediction = dlModel.predict(img_array)
